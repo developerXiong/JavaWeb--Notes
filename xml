@@ -1,0 +1,194 @@
+//////////////////////////
+xml:
+	可以编写简单的xml文件
+	可以按照指定的约束文件编写xml文件
+tomcat：★
+//////////////////////////
+案例1-编写配置文件，编写一个服务器软件，按照指定的全限定名，根据路径，让服务器创建这个对象，调用指定的方法。
+需求：
+	<a1>
+		<c>hello</c>
+		<d>com.xiongcy.helloServlet</d>
+	</a1>
+	<b1>
+		<c>hello</c>
+		<e>/hello</e>
+	</b1>
+技术分析：
+	xml
+	解析xml
+	根据全限定名创建一个对象，调用方法
+////////////////////////////////
+xml：
+	可扩展的标签语言
+	标签自定义。
+	作用：存储数据。（配置文件）
+	书写规范：
+		1. 区分大小写
+		2. 应该有一个根标签
+		3. 标签必须关闭
+			<xx></xx>
+			<xx/>
+		4. 属性必须用引号引起来，
+			<xx att="value"/>
+		5. 标签体中的空格或者换行或者制表符等内容都是作为数据内容存在的
+			<xx>aa</xx>
+			<xx>  aa  </xx>
+		6. 特殊字符必须转义
+			< > & 
+		格式良好的xml文件。可以通过浏览器浏览
+	后缀名：
+		.xml
+xml组成部分：
+	声明：
+		作用：xml文件
+		格式：
+			<?xml ...... ?>
+		例如：
+			<?xml version='1.0' encoding='UTF-8' standalone="yes|no" ?>
+		要求：
+			必须在xml文件的第一行
+			必须顶格写
+	元素（标签）：
+		格式：
+			<xx></xx>
+			<xx/>
+		要求：
+			1. 必须关闭
+			2. 标签名不能 xml Xml XML ...开头
+			3. 标签名中不能出现“ ”或者“：”等等特殊字符。
+	属性：
+		格式：
+			<xx 属性名="属性值"/>
+		要求：
+			属性必须用引号引起来
+	注释：
+		和html一样
+		<!-- -->
+	CDATA：
+		特殊字符必须转义
+		通过cdataky 保证数据原样输出
+			格式：
+				<![CDATA[
+					原样数据内容
+				]]>
+/////////////////////////////
+xml解析：
+	解析方式：
+		1. sax，特点：逐行解析，只能查询。
+		2. dom，特点：一次性将文档加载到内存中，形成一个dom树。可以对dom树curd操作
+	解析技术：
+		JAXP：sun公司提供支持DOM和SAX开发包
+		JDOM：dom4j兄弟
+		jsoup：一种处理HTML特定解析开发包
+		★★dom4j：比较常用的解析开发包，hibernate底层采用。
+	dom4j技术进行查询操作。
+		使用步骤：
+			1. 导入jar包
+			2. 创建一个核心对象 SAXReader
+				new SAXReader();
+			3. 将xml文档加载到内存中形成一棵树
+				Document doc = reader.read(文件)
+			4. 获取根节点
+				Element root = doc.getRootElement();
+			5. 通过根节点获取其他节点（文本节点，属性节点，元素节点）
+				获取所有的子元素
+					List<Element> list = root.elements();
+				获取元素的指定属性内容
+					String value = root.attributeValue("属性名称");
+				获取子标签的标签体：遍历list 获取到每一个子元素
+					String text = ele.elementsText("子标签名称");
+
+	xpath解析技术：(扩展)
+		依赖于dom4j
+			使用步骤：
+				1. 导入jar包（dom4j&jaxen-1.1-beta-6.jar）
+				2. 加载xml文件到内存中
+				3. 使用api
+					selectNodes（"表达式"）；
+					selectSingleNode("表达式");
+			表达式的写法：
+				 / 从根节点选取
+				/ / 从匹配选择的当前节点选择文档中的节点，而不考虑他们的位置
+				例如一个标签下有一个id属性且有值 id=2；
+					/ /元素名[@属性名='属性值']
+					/ /元素名[@id='2']
+
+///////////////////////////////
+反射：
+	1. 获取对应的class对象
+		方式1：★
+			Class clazz = Class.forName("全限定名");
+		方式2：
+			Class clazz = 类名.class
+		方式3：
+			Class clazz == 对象.getClass();
+	2. 通过class对象创建一个实例对象（相当于 new 类（））
+		Object clazz.newInstance();
+	3. 通过class对象创建一个方法
+		clazz.getMethod("方法名", Class ... ParamTypes);
+			ParamTypes为参数的类型
+	4. 让方法执行
+		method.invoke(Object 实例对象, Object ... 参数)；
+			Object 实例对象：以前调用方法的对象
+			Object ... 参数：该方法运行时需要的参数
+		例如：
+			mthod,invoke(a,10,30)
+////////////////////////////////
+xml约束：
+	作用：规定xml中可以出现哪些元素及哪些属性，以及出现的顺序。
+	约束的分类：
+		1. DTD约束：struts hirbernate
+		2. SCHEMA约束：tomcat spring ...
+/////////////////////////////////
+DTD约束:
+	和xml的关联
+		方式1：内部关联
+			格式：<!DOCTYPE 根元素名 [DTD语法]>
+		方式2：外部关联-系统关联
+			<!DOCTYPE 根元素名 SYSTEM "约束文件的位置">
+			<!DOCTYPE web-app SYSTEM "web-app_2_3.dtd">
+		方式3：外部关联-公共关联
+			<!DOCTYPE 根元素名 PUBLIC "约束文件名称" "约束文件的位置">
+
+dtd语法（了解）
+	元素：
+		<!Element 元素名称 数据类型|包含内容>
+			数据类型：
+				#PCDATA：普通文本 使用的时候一般用()引起来
+			包含内容：
+				该元素下可以出现哪些元素用()引起来
+		符号：
+			*   出现任意次
+			?   出现1次或者0次
+			+	出现至少一次
+			| 	或者
+			()	分组
+			,	顺序
+
+		属性：
+			格式：
+				<!ATTLIST 元素名 属性名 属性类型属性是否必须出现>
+			属性类型：
+				ID：唯一
+				CDATA：普通文本
+			属性是否必须出现
+				REQUIRED：必须出现
+				IMPLIED：可以不出现
+		一个xml文档中只能增加一个dtd约束
+xml学习目标：
+	编写简单的xml文件
+	可以根据约束文件写出相应的xml文件。
+	按f2或者 alt+/
+//////////////////////////////////
+SCHEMA约束：
+	一个xml文档中可以增加多个 SCHEMA约束
+	xml和schema关联
+		格式：
+			<根标签 xmlns="..." ...>
+			<根标签 xmlns：别名="..." ...>
+	名称空间：
+		关联约束文件
+		规定元素来源于哪个约束文件
+注意：
+	schema约束本身也是xml文件。

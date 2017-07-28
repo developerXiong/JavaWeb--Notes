@@ -1,0 +1,244 @@
+案例1-通过jdbc完成单表的curd操作：
+需求：
+	对分类表完成操作。
+技术分析：
+	jdbc
+//////////////////////////////
+jdbc：
+	java操作数据库，jdbc是oracle公司指定的一套规范（一套接口）
+	驱动：jdbc的实现类。由数据库厂商提供。
+	我们就可以通过一套规范操作不同的数据库（多态）
+	jdbc作用：
+		连接数据库
+		发送sql语句
+		处理结果
+
+jdbc操作步骤：
+	1. 数据库和表
+	2. 创建一个项目
+	3. 导入驱动jar包
+	4. 编码：
+		注册驱动
+		获取连接
+		编写sql
+		创建预编译的语句执行者
+		设置参数
+		执行sql语句
+		处理结果
+		释放资源
+
+	初始化数据库和表：
+		create table category (
+			cid varchar(20) primary key,
+			cname varchar(20)
+		);
+
+		insert into category values('c001', '电器');
+		insert into category values('c002', '服饰');
+		insert into category values('c003', '化妆品');
+		insert into category values('c004', '书籍');
+
+	IDE打开之后：
+		1. 修改字符集
+		2. 新建java项目
+		3. 使用的jdk为自己的 不使用内置
+
+	使用junit单元测试
+		要求：
+			1. 方法是public void xxx（）{}
+			2. 在方法上添加@Test
+			3. 在@Test 按下 command+1（）
+			4. 在方法上右键 run as -->junit 就可以执行方法.
+
+🐯错误解决：
+	1.eclipse执行insert语句时中文乱码：
+		 登陆mysql执行 SET character_set_connection = utf8 ;命令，然后在数据库连接的url中要带字符设置,比如jdbc:mysql://localhost:3306/goods?useUnicode=true&characterEncoding=UTF-8 
+
+jdbc-api详解：
+	所有的包都是java.sql或者 javax.sql
+
+	DriverManager：管理一组jdbc操作 类
+		常用方法：
+			了解：注册驱动
+				static void registerDriver（Driver driver）:
+					通过查看 com.mysql.jdbc.Driver的源码 代码：
+					static {
+				        try {
+				            java.sql.DriverManager.registerDriver(new Driver()); // 这段代码写过
+				        } catch (SQLException E) {
+				            throw new RuntimeException("Can't register driver!");
+				        }
+				    }
+				    驱动注册了两次，我们只需要将静态代码块执行一次，类被加载到内存中会执行静态代码块，并且只执行一次，现在只需要将类加载到内存中即可：
+				    	方式1：
+				    		😎Class.forName("全限定名");// 包名+类名 com.mysql.jdbc.Driver
+				    	方式2：
+				    		类名.class;
+				    	方式3：
+				    		对象.getClass();
+			掌握：获取连接
+				static Connection getConnection(String url, String user, String password)
+					参数1： 告诉我们连接什么类型的数据库及连接哪个数据库
+						协议:数据库类型:子协议 参数
+						mysql: jdbc:mysql://localhost:3306/数据库名称
+						oracle: jdbc:oracle:thin@localhost:1521@实例
+					参数2：账户名 root
+					参数3：密码  fanleilei520
+
+
+	（了解）Driver：java.sql 接口 驱动
+	Connection:连接 接口
+		常用方法：
+			获取语句执行者：
+				(了解)Statement createStatement(); 获取普通的语句执行者 会出现sql注入
+				PreparedStatement prepareStatement(String sql); :获取预编译语句执行者
+				(了解)CallableStatement prepareCall(String sql);
+
+			了解：
+				setAutoCommit(false): 手动开启事务
+				commit():提交事务
+				rollback（）：事务回滚
+
+	Statement:语句执行者 接口
+	PreparedStatement：预编译语句执行者 接口
+		常用方法：
+			设置参数：setXxx(int index, object value);
+				常用的：
+					setInt
+					setString
+					setObject
+			执行sql：
+				executeQuery() :执行r语句 返回值：结果集
+				int executeUpdate() :执行cud语句  返回值：影响的行数
+	ResultSet：结果集 接口
+		执行查询语句之后返回的结果
+			常用方法：
+				boolean next():判断是否有下一条记录，若有返回true且将光标移到下一行，若没有返回false。光标一开始处于第一条记录的上面
+
+				获取具体内容
+					getXxx(Int|String)
+						若参数为int：第几列
+						若参数为String：列名
+					例如：
+						getString(2);
+						getString("cname");
+					常用方法：
+						getInt
+						getString 也可以获取Int
+						getObject 获取任意值
+////////////////////////////////////
+常见的配置文件格式：
+	1. properties
+		里面内容的格式 key=value
+	2. xml
+//////////////////////
+	若我们的配置文件为properties，并且放在src目录下。
+	可以通过 ResourceBundle 工具快速获取里面的配置信息
+		使用步骤：
+			1. 获取 ResourceBundle 对象：
+				static ResourceBundle getBundle("文件名称不带后缀名")
+			2. 通过 ResourceBundle 对象获取配置信息
+				String getString(String key) :通过指定的key获取指定的value
+///////////////////////////
+案例2-通过连接池（数据源）优化我们的操作。
+需求：
+	使用jdbc的时候，每操作一次都需要获取连接（创建）用完之后把连接释放掉，通过连接池来优化curd操作。
+技术分析：
+	连接池
+///////////////////////////
+连接池概述：
+	管理数据库的连接，
+	作业：
+		提高项目的性能。
+	就是在连接池初始化的时候存入一定数量的连接，用的时候通过方法获取，不用的时候归还连接即可。
+	所有的连接池必须实现一个接口 javax.sql.DataSource 接口
+
+	获取连接方法：
+		Connection getConnection();
+	归还连接的方法就是以前释放资源的方法. connection.close();
+自定义一个连接池(理解思想)
+
+常用连接池：
+	DBCP
+	C3P0
+///////////////////////////
+增强方法
+	1. 继承
+	2. 装饰者模式（静态代理）
+
+	3. 动态代理
+///////////////////////////
+装饰者模式：
+	使用步骤：
+		1. 装饰者和被装饰者实现同一个接口或者继承同一个类
+		2. 装饰者中要有被装饰者的引用
+		3. 对需要增强的方法进行加强
+		4. 对不需要加强的方法调用原来方法即可
+///////////////////////////
+常用连接池：
+	DBCP:（理解）
+		apache组织
+		使用步骤：
+			1. 导入jar包
+			2. 使用api
+				a.硬编码
+					new BasicDatasource()
+				b.配置文件
+					实现编写一个properties文件
+					new BasicDatasourceFactory().create
+	C3P0:（掌握）
+		hibernate和spring使用
+		有自动回收空闲连接的功能。
+		使用步骤：
+			1. 导入jar包
+			2. 使用api
+				a. 硬编码（不推荐）
+					new ComboPooledDataSource()
+				b. 配置文件
+					配置文件的名称：c3p0.properties 或者 c3p0-config.xml
+					配置文件的路径：src下
+					编码只需要一句话
+						new ComboPooledDataSource()// 使用默认的配置
+						new ComboPooledDataSource(String configName)// 使用命名的配置，若参数名字找不到则使用默认的配置.
+
+///////////////////////////////
+案例3-使用dbutils完成curd操作
+技术分析：
+	dbutils：是apache组织的一个工具类，jdbc的框架，更方便使用
+	使用步骤：
+		1. 导入jar包（commons-dbutils-1.4.jar）
+		2. 创建一个queryrunner类
+			queryrunner作用：操作sql语句
+				构造方法：
+					new QueryRunner(DataSource ds);
+		3. 编写sql
+		4. 执行sql
+			query(...):执行r操作
+			update(...):执行cud操作
+///////////////////////////////
+核心类或接口
+	QueryRunner：类
+		作用：操作sql语句
+		构造器：
+			new QueryRunner(DataSource ds);
+			注意：
+				底层帮我们创建连接，创建语句执行者，帮我们释放资源；
+		常用方法：
+			query(...)
+			update(...):
+
+	Dbutils：释放资源，控制事务 类
+		close()；
+
+	ResultSetHandler：封装结果集 接口
+		9个实现类
+		ArrayHandler：将查询结果的第一条记录封装成数组，返回
+		ArrayListHandler：将查询结果的每一条记录封装成数组，将没一个数组放入List中返回
+		★★BeanHandler：将查询结果的第一条记录封装成指定的bean对象，返回
+		★★BeanListHandler：将查询结果的每一条记录封装成指定的bean对象，将每一个bean对象放入list中返回
+		ColumnListHandler：将查询结果的指定的一列放入list中返回
+		MapHandler：将查询结果的第一条记录封装成map，字段名作为key，值为value返回
+		★MapListHandler：将查询结果的每一条记录封装map集合，将每一个map集合放入list中返回。
+		★ScalarHandler：针对聚合函数 例如：count(*) 返回long类型
+
+

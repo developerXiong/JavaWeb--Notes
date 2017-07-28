@@ -1,0 +1,160 @@
+案例2-创建多表，可以描述出表与表之间的关系
+需求：
+	把网上商城里面用的实体创建成表，并且将他们之间建立关系。
+技术分析：
+	sql
+
+/////////////////////////////////////
+网上商城的实体：
+	用户  订单  商品  分类
+常见关系：
+	一对多：用户和订单  分类和商品
+	多对多：订单和商品  学生和课程
+	一对一：丈夫和妻子  
+ER图可以描述实体与实体之间的关系
+	实体用矩形表示
+	属性用椭圆形表示
+	关系用棱形表示
+////////////////////////////////////
+一对多：在开发中，将一对多的关系，一方称之为主表 ，多方称之为多表或者从表，
+为了表示一对多的关系，一般会在多表的一方添加一个字段，这个字段名称
+自定义（建议：主表的名称_id）字段类型一般和主表的主键的类型保持一致，
+我们称这个字段为外键。
+	用户和订单
+	// 创建用户表
+		create table user(
+			id int primary key auto_increment,
+			username varchar(20)
+		);
+	// 创建订单表
+		create table orders(
+			id int primary key auto_increment,
+			totalprice double,
+			user_id int
+		);
+
+为了保证数据的有效性和完整性，添加约束（外键约束）。
+	在多表的一方添加外键约束
+		格式：
+			alter table 多表名称 add foreign key（外键名称） references 主表名称（主键）；
+		例如：
+			alter table orders add foreign key(user_id) references user(id);
+添加了外键约束之后有如下特点：※
+	1. 主表中不能删除从表中已引用的数据；
+	2. 从表中不能添加主表中不存在的数据。
+////////////////////////////////////
+多对多
+	例如： 商品和订单
+	在开发中我们一般引入一张中间表，在中间表中存放两张表的主键，一般还会将这两个主键
+	设置成中间表的联合主键将多对多拆分成两个一对多。
+	为了保证数据的有效性和完整性，在中间表上增加两个外键约束即可。
+
+	// 创建商品表
+	create table product(
+		id int primary key auto_increment,
+		name varchar(20),
+		price double
+	);
+///////////////////////////////////////////
+案例3-多表查询
+技术分析：
+	内连接
+	外链接
+	子查询
+///////////////////////////////////////////
+笛卡尔积:了解
+	多张表无条件的联合查询，没有任何意义
+		select a.*,b.* from a,b;
+内连接:※
+	格式1：显式的内连接
+		select a.*,b.* from a [inner] join b on ab的连接条件;
+	格式2：隐式的内连接
+		select a.*,b.* from a,b where ab的连接条件;
+外链接:※
+	左外链接：※
+		select a.*,b.* from a left [outer] join b on 连接条件
+		意思：先展示join左边的（a）表所有数据，根据条件关联查询 join右边的表（b），符合条件则展示出来，不符合以null显示。
+	右外链接：
+		select a.*,b.* from b right [outer] join a on 连接条件
+		意思：先展示右边（a）表的所有数据，根据条件关联查询join左边（b）表，符合条件则展示出来，不符合以null显示。
+子查询:※
+	一个查询依赖另一个查询
+
+
+练习：
+	1.查询用户的订单，没有订单的用户不显示
+		隐式内连接：
+			select user.username,orders.* from user,orders where user.id=orders.user_id;
+		显式内连接:
+			select user.*,orders.* from user join orders on user.id=orders.user_id;
+	2.查询所有用户的订单详情
+		左外连接：user在左
+			select user.*,orders.* from user left join orders on user.id=orders.user_id;
+	3.查询所有订单的用户详情
+		右外连接：orders在右
+			select orders.*,user.* from user right join orders on user.id=orders.user_id;
+
+练习：
+	1. 查看用户为张三的订单详情
+		-- 先查询张三的id
+		select id from user where username='张三';
+		-- 
+		select * from orders where user_id = 3;
+
+		-- 合并
+		select * from orders where user_id = (select id from user where username='张三');
+	2. 查询出订单的价格大于300的所有用户信息
+		select * from user where id in(select user_id from orders where price > 300);
+	3. 查询订单价格大于300的订单信息及相关用户的信息
+		select user.*,orders.* from orders,user where orders.price>300;
+
+		select user.*,tmp.* from user,(select * from orders where price>300) as tmp where user.id=tmp.user_id;
+
+///////////////////////////////////////////
+///////////////////////////////////////////
+初始化数据
+	-- 用户表（user）
+	create table user(
+		id int auto_increment primary key,
+		username varchar(50)
+	);
+
+	-- 订单表（orders）
+	create table orders(
+		id int auto_increment primary key,
+		price double,
+		user_id int
+	);
+
+	-- 给订单表添加外键约束
+	alter table orders add constraint user_fk foreign key (user_id) references user(id);
+
+	-- 向user表中添加数据
+		insert into user values(3,'张三');
+		insert into user values(4,'李四');
+		insert into user values(5,'王五');
+		insert into user values(6,'赵六');
+
+	-- 向orders 表中插入数据
+		insert into orders values(1,1314,3);
+		insert into orders values(2,1314,3);
+		insert into orders values(3,15,4);
+		insert into orders values(4,315,5);
+		insert into orders values(5,1314,null);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
